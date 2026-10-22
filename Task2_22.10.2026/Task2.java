@@ -11,12 +11,11 @@ import java.util.concurrent.Future;
 
 public class Task2 {
 
-    // TODO: replace with your real Student ID (same as Task 1)
     private static final long STUDENT_ID = 230103160L;
     private static final int N = 20_000_000;
-    private static final double P = 0.95;   // parallelizable fraction for Amdahl's Law
+    private static final double P = 0.95;   
     private static final int WARMUP_RUNS = 3;
-    private static final int TIMED_RUNS = 7; // median of these is reported
+    private static final int TIMED_RUNS = 7; 
 
     public static void main(String[] args) throws Exception {
         int maxCores = Runtime.getRuntime().availableProcessors();
@@ -29,14 +28,12 @@ public class Task2 {
         System.out.println("Array size: " + N + " (double / float64), Amdahl P = " + P);
         System.out.println();
 
-        // Same data generation as Task 1
         Random rng = new Random(STUDENT_ID);
         double[] data = new double[N];
         for (int i = 0; i < N; i++) {
             data[i] = rng.nextDouble();
         }
 
-        // Worker counts: [1, 2, 4, max_cores, max_cores * 2] (duplicates removed)
         Set<Integer> countSet = new LinkedHashSet<>(Arrays.asList(1, 2, 4, maxCores, maxCores * 2));
         List<Integer> counts = new ArrayList<>(countSet);
 
@@ -47,7 +44,6 @@ public class Task2 {
             int p = counts.get(idx);
             ExecutorService pool = Executors.newFixedThreadPool(p);
             try {
-                // Warm-up so the JIT compiles the hot loop before timing
                 for (int w = 0; w < WARMUP_RUNS; w++) {
                     parallelSum(data, p, pool);
                 }
@@ -60,7 +56,7 @@ public class Task2 {
                     runs[r] = (end - start) / 1_000_000.0;
                 }
                 Arrays.sort(runs);
-                times[idx] = runs[TIMED_RUNS / 2]; // median
+                times[idx] = runs[TIMED_RUNS / 2]; 
                 sums[idx] = sum;
             } finally {
                 pool.shutdown();
@@ -89,7 +85,6 @@ public class Task2 {
         System.out.printf("Amdahl limit as p -> infinity: %.1fx%n", 1.0 / (1.0 - P));
     }
 
-    /** Splits the array into p contiguous chunks, sums each in a worker, then combines. */
     private static double parallelSum(double[] data, int p, ExecutorService pool) throws Exception {
         int n = data.length;
         int chunk = (n + p - 1) / p;
