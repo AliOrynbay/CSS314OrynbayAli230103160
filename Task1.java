@@ -38,7 +38,7 @@ public class Task1 {
             double d = data[i] - mean;
             sqDiff += d * d;
         }
-        double stdDev = Math.sqrt(sqDiff / N); // population standard deviation
+        double stdDev = Math.sqrt(sqDiff / N); 
 
         long end = System.nanoTime();
         double elapsedMs = (end - start) / 1_000_000.0;
@@ -49,7 +49,6 @@ public class Task1 {
         System.out.printf("Serial execution time: %.3f ms%n", elapsedMs);
     }
 
-    /** Best-effort CPU model detection across Linux / Windows / macOS. */
     private static String detectCpuModel() {
         try {
             String os = System.getProperty("os.name").toLowerCase();
