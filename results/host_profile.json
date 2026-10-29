@@ -1,0 +1,26 @@
+{
+  "cpu_model": "AMD64 Family 25 Model 80 Stepping 0, AuthenticAMD",
+  "microarchitecture": "AMD64",
+  "base_frequency_mhz": null,
+  "physical_cores": null,
+  "logical_threads": 12,
+  "smt_enabled": false,
+  "cache": {
+    "l1d_bytes": null,
+    "l2_bytes": null,
+    "l3_bytes": null,
+    "cache_line_bytes": 64
+  },
+  "os": {
+    "system": "Windows",
+    "kernel": "10",
+    "version": "10.0.26300",
+    "machine": "AMD64"
+  },
+  "python": {
+    "implementation": "CPython",
+    "version": "3.11.2",
+    "compiler": "MSC v.1934 64 bit (AMD64)",
+    "numpy": "2.3.5"
+  }
+}
