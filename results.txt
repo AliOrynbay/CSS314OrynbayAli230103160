@@ -1,0 +1,60 @@
+ADVANCED PARALLEL PROGRAMMING - EMPIRICAL RESULTS
+======================================================================
+Python: 3.11.2
+OS: Windows-10-10.0.26200-SP0
+Processor: AMD64 Family 25 Model 80 Stepping 0, AuthenticAMD
+Logical CPUs: 12
+
+======================================================================
+task1_amdahl.py
+======================================================================
+OSReportedLogicalCores:12
+SingleProcessBaselineTimeT(1):2.6544s
+
+Cores|Time(s)|ObservedSpeedup|TheoreticalLinear
+-------------------------------------------------------
+    1| 2.6544|            1.00x|              1.00x
+    2| 1.3655|            1.94x|              2.00x
+    4| 0.8677|            3.06x|              4.00x
+    8| 0.6830|            3.89x|              8.00x
+   12| 0.7476|            3.55x|             12.00x
+   16| 0.7725|            3.44x|             16.00x
+
+======================================================================
+task2_falsesharing.py
+======================================================================
+Trial 1: Adjacent=1.1668s | Padded=1.1605s | Slowdown=1.01x
+Trial 2: Adjacent=1.1817s | Padded=1.0002s | Slowdown=1.18x
+Trial 3: Adjacent=1.0293s | Padded=0.9957s | Slowdown=1.03x
+
+Median results:
+AdjacentIndices(FalseSharing):1.1668s
+PaddedIndices(Cache-Aligned):1.0002s
+SlowdownFactor:1.17x
+
+======================================================================
+task3_sync.py
+======================================================================
+Unsafe:Value=2,000,000/2,000,000|Time:0.1476s
+Locked:Value=2,000,000/2,000,000|Time:0.4860s
+LocklessThreadLocal:Value=2,000,000/2,000,000|Time:0.0596s
+LocklessSpeedupOverLocked:8.16x
+ContentionCostMultiplier:3.29x
+
+======================================================================
+task4_roofline.py
+======================================================================
+===Compute-Bound Suite (Register Math)===
+Workers:1|ExecutionTime:0.9383s
+Workers:2|ExecutionTime:0.9847s
+Workers:4|ExecutionTime:1.0533s
+
+===Memory-Bound Suite (DRAM Bandwidth Saturation)===
+Workers:1|ExecutionTime:1.0383s
+Workers:2|ExecutionTime:1.7261s
+Workers:4|ExecutionTime:3.2710s
+
+===Scaling Summary===
+Workers:1 | ComputeScaling:1.00x | MemoryDegradation:1.00x
+Workers:2 | ComputeScaling:1.05x | MemoryDegradation:1.66x
+Workers:4 | ComputeScaling:1.12x | MemoryDegradation:3.15x

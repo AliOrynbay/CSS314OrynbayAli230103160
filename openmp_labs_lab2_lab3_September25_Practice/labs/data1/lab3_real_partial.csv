@@ -1,0 +1,7 @@
+policy,chunk_size,threads,trial,time_s
+static,-1,12,1,0.266
+static,-1,12,2,0.262
+static,-1,12,3,0.256
+static,1000,12,1,0.261
+static,1000,12,2,0.257
+static,1000,12,3,0.253

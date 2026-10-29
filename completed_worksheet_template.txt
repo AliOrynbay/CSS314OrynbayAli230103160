@@ -1,0 +1,365 @@
+ADVANCED PARALLEL PROGRAMMING & ARCHITECTURE
+LABORATORY EXAMINATION & SILICON PROFILING WORKSHEET
+
+TASK 1 — AMDAHL'S LAW & PHYSICAL SILICON SATURATION
+
+
+Measured table:
+
+p=1:  Time=2.6544 s | Speedup=1.00x | Efficiency=100.0%
+p=2:  Time=1.3655 s | Speedup=1.94x | Efficiency=97.0%
+p=4:  Time=0.8677 s | Speedup=3.06x | Efficiency=76.5%
+p=8:  Time=0.6830 s | Speedup=3.89x | Efficiency=48.6%
+p=12: Time=0.7476 s | Speedup=3.55x | Efficiency=29.6%
+p=16: Time=0.7725 s | Speedup=3.44x | Efficiency=21.5%
+
+Q1.1 Student Response:
+
+The measured speedup reaches its maximum at p=8, where the observed speedup
+is 3.89x. Increasing the number of workers to 12 and 16 reduces the observed
+speedup to 3.55x and 3.44x respectively.
+
+Therefore, the empirical inflection point is approximately p*=8.
+
+The degradation after p=8 indicates that additional workers are no longer
+providing useful proportional parallelism. Additional logical workers compete
+for shared execution resources, cache and memory bandwidth. Process creation,
+scheduling, IPC and context-switching overhead also reduce the observed
+scaling.
+
+Q1.2 Student Response:
+
+Let S4 = T(1) / T(4).
+
+Amdahl's law:
+
+S(4) = 1 / [(1-P) + P/4]
+
+Therefore:
+
+1/S4 = (1-P) + P/4
+1/S4 = 1 - P + P/4
+1/S4 = 1 - 3P/4
+
+3P/4 = 1 - 1/S4
+
+P = (4/3) * (1 - 1/S4)
+
+Using the measured T(1) and T(4):
+
+S4 = 2.6544 / 0.8677 = 3.06x
+
+P = (4/3) * (1 - 1/3.06)
+
+P = 0.7753
+
+Thus the empirically estimated parallel fraction is approximately 77.53%.
+
+Q1.3 Student Response:
+
+The asymptotic Amdahl limit is:
+
+Smax = 1 / (1-P)
+
+Using the measured P:
+
+Smax = 1 / (1 - 0.7753)
+≈ 4.45x
+
+This means that even if an ideal 128-core server were available, the workload
+could not obtain 128x speedup if a non-parallel fraction remains. The serial
+fraction imposes an upper bound, and real hardware would additionally introduce
+scheduling, communication, cache, memory and synchronization overheads.
+
+
+TASK 2 — CACHE COHERENCE & THE FALSE SHARING TRAP
+
+Trial data:
+
+Adjacent Trial 1: 1.1668 s
+Adjacent Trial 2: 1.1817 s
+Adjacent Trial 3: 1.0293 s
+Adjacent Median: 1.1668 s
+
+Padded Trial 1: 1.1605 s
+Padded Trial 2: 1.0002 s
+Padded Trial 3: 0.9957 s
+Padded Median: 1.0002 s
+
+Slowdown penalty: 1.17x
+
+Q2.1 Student Response:
+
+The benchmark uses Python integers/references. A CPython list stores references
+to objects, and on a typical 64-bit CPython build a reference is 8 bytes.
+Therefore 8 bytes is the size of a list reference, not the complete Python
+integer object itself.
+
+For the benchmark's conceptual cache-line spacing:
+
+16 references × 8 bytes/reference = 128 bytes.
+
+A cache line is 64 bytes. Therefore:
+
+128 bytes > 64 bytes.
+
+Index i is separated from index i+1 in the padded layout by 16 × 8 = 128 bytes.
+Consequently the padded target locations are separated by at least two
+64-byte cache-line widths, so adjacent worker targets cannot reside within the
+same 64-byte cache line, assuming the normal contiguous list-reference layout.
+
+Q2.2 Student Response:
+
+Initially the cache line may be in Shared (S) state in both cores after being
+read. When Core 0 performs a write to index 0, it requires exclusive ownership,
+so the coherence protocol invalidates other cached copies and Core 0 obtains
+the line in Modified (M) state. If Core 1 subsequently writes index 1 while the
+two indices share the same cache line, Core 1 must obtain ownership. Core 1's
+request causes Core 0's copy to be invalidated. The line transitions from Core
+0's Modified state toward Invalid (I), while Core 1 obtains the modified
+ownership.
+
+Repeated alternating writes create repeated invalidation/coherence traffic
+even though the logical variables are independent. This is the false-sharing
+effect.
+
+Q2.3 Student Response:
+
+Two standard mechanisms are:
+
+1. C++11 alignas(64), which can explicitly align objects or storage to a
+   cache-line boundary.
+
+2. Java @Contended, which asks the JVM to add separation/padding around
+   contended fields to reduce false sharing.
+
+Both avoid having frequently written independent fields occupy the same cache
+line without requiring application-level synchronization.
+
+
+TASK 3 — THE SYNCHRONIZATION TAX & LOCKLESS REDESIGN
+
+
+Measured:
+
+Unsafe value: 2,000,000 / 2,000,000
+Unsafe time: 0.1476 s
+
+Locked value: 2,000,000 / 2,000,000
+Locked time: 0.4860 s
+
+Lockless value: 2,000,000 / 2,000,000
+Lockless time: 0.0596 s
+
+Lockless speedup over locked: 8.16x
+
+Q3.1 Student Response:
+
+The exact corrupted value is the value reported by the empirical run:
+2,000,000.
+
+In this particular empirical run, the unsafe implementation did not produce
+an incorrect final value. However, the increment operation can conceptually
+be viewed as:
+
+LOAD → ADD → STORE.
+
+For example, if two threads both load the same old value N, both calculate
+N+1, and both store N+1, only one increment is reflected in memory. The other
+update is lost. Repeating this interleaving can make the final result smaller
+than the target total.
+
+The defect is caused by overlapping read-modify-write sequences without
+synchronization.
+
+Q3.2 Student Response:
+
+The lockless design uses thread-local accumulation buffers. Each worker
+performs all of its increments in a private local variable. No worker writes
+to another worker's accumulator while the parallel phase is executing.
+
+After all threads join, the main thread performs one reduction:
+
+result = sum(partial)
+
+This is the Map-Reduce pattern. The expected result is exactly 2,000,000.
+
+Measured result:
+
+2,000,000 / 2,000,000
+
+Measured lockless time:
+
+0.0596 s
+
+Measured locked time:
+
+0.4860 s
+
+Speedup:
+
+Locked time / Lockless time
+= 0.4860 / 0.0596
+= 8.16x
+
+The measured speedup is 8.16x, which is greater than the required 2.0x
+threshold.
+
+Q3.3 Student Response:
+
+Removing shared mutable state eliminates the main source of contention instead
+of merely attempting to make the lock cheaper. With thread-local state, workers
+can update independent memory without repeatedly acquiring the same mutex and
+without forcing synchronization at every increment. The final reduction is
+performed once after the parallel work completes.
+
+This reduces lock contention, coherence traffic and serialization. Adaptive
+locks, spinlocks or read-write locks still leave synchronization around shared
+state, whereas partitioning changes the data-access pattern itself.
+
+
+TASK 4 — THE MEMORY WALL VS. COMPUTE SATURATION
+
+
+Measured table:
+
+w=1:
+Compute time: 0.9383 s
+Compute scaling: 1.00x
+Memory time: 1.0383 s
+Memory degradation: 1.00x
+
+w=2:
+Compute time: 0.9847 s
+Compute scaling: 1.05x
+Memory time: 1.7261 s
+Memory degradation: 1.66x
+
+w=4:
+Compute time: 1.0533 s
+Compute scaling: 1.12x
+Memory time: 3.2710 s
+Memory degradation: 3.15x
+
+Q4.1 Student Response:
+
+The compute-bound workload performs arithmetic primarily in registers, so its
+limiting resource is CPU execution throughput. Increasing the number of
+processes can therefore expose additional CPU execution resources, subject to
+the physical core capacity and other overheads.
+
+The memory-bound workload repeatedly transfers large arrays through the memory
+subsystem. Multiple workers compete for the same DRAM channels and memory
+controller bandwidth. Once the memory subsystem is saturated, adding workers
+cannot provide proportional throughput. Instead, they increase contention and
+queueing, causing execution time to increase or scaling to flatten.
+
+The measured results demonstrate this difference. Compute execution time
+increased only from 0.9383 s to 1.0533 s as workers increased from 1 to 4,
+while memory execution time increased from 1.0383 s to 3.2710 s.
+
+Q4.2 Student Response:
+
+Host memory specification:
+
+For DDR memory, a simplified theoretical bandwidth calculation is:
+
+Bandwidth = Transfer Rate × Bus Width / 8
+
+For example, for a 64-bit channel:
+
+Bandwidth = MT/s × 64 / 8
+= MT/s × 8 bytes
+
+For multiple channels, the theoretical peak is multiplied by the number of
+channels, assuming they are populated and operating symmetrically.
+
+The theoretical value is an upper bound. Real application bandwidth is usually
+lower because of memory-access patterns, controller overhead, refresh,
+contention and other architectural effects.
+
+Q4.3 Student Response:
+
+If the workload is genuinely memory-bandwidth saturated, adding CPU
+parallelism does not remove the bottleneck because the limiting resource is
+the DRAM subsystem.
+
+GPU acceleration can provide a larger benefit only if the GPU has substantially
+greater effective memory bandwidth and the workload can be moved efficiently
+to GPU memory. Otherwise, CUDA can also be limited by data-transfer overhead.
+
+CPU OpenMP pragmas can increase parallelism, but if the CPU DRAM bus is already
+saturated, additional CPU workers will mainly increase contention.
+
+Therefore the architectural choice should be based on measured bandwidth and
+whether the target platform has sufficient bandwidth for the workload.
+
+RAW EMPIRICAL RESULTS
+
+Python: 3.11.2
+OS: Windows-10-10.0.26200-SP0
+Processor: AMD64 Family 25 Model 80 Stepping 0, AuthenticAMD
+Logical CPUs: 12
+
+task1_amdahl.py
+
+OSReportedLogicalCores:12
+SingleProcessBaselineTimeT(1):2.6544s
+
+## Cores|Time(s)|ObservedSpeedup|TheoreticalLinear
+
+1|2.6544|1.00x|1.00x
+2|1.3655|1.94x|2.00x
+4|0.8677|3.06x|4.00x
+8|0.6830|3.89x|8.00x
+12|0.7476|3.55x|12.00x
+16|0.7725|3.44x|16.00x
+
+task2_falsesharing.py
+
+Trial 1: Adjacent=1.1668s | Padded=1.1605s | Slowdown=1.01x
+Trial 2: Adjacent=1.1817s | Padded=1.0002s | Slowdown=1.18x
+Trial 3: Adjacent=1.0293s | Padded=0.9957s | Slowdown=1.03x
+
+Median results:
+AdjacentIndices(FalseSharing):1.1668s
+PaddedIndices(Cache-Aligned):1.0002s
+SlowdownFactor:1.17x
+
+task3_sync.py
+
+Unsafe:Value=2,000,000/2,000,000|Time:0.1476s
+Locked:Value=2,000,000/2,000,000|Time:0.4860s
+LocklessThreadLocal:Value=2,000,000/2,000,000|Time:0.0596s
+LocklessSpeedupOverLocked:8.16x
+ContentionCostMultiplier:3.29x
+
+task4_roofline.py
+
+===Compute-Bound Suite (Register Math)===
+Workers:1|ExecutionTime:0.9383s
+Workers:2|ExecutionTime:0.9847s
+Workers:4|ExecutionTime:1.0533s
+
+===Memory-Bound Suite (DRAM Bandwidth Saturation)===
+Workers:1|ExecutionTime:1.0383s
+Workers:2|ExecutionTime:1.7261s
+Workers:4|ExecutionTime:3.2710s
+
+===Scaling Summary===
+Workers:1 | ComputeScaling:1.00x | MemoryDegradation:1.00x
+Workers:2 | ComputeScaling:1.05x | MemoryDegradation:1.66x
+Workers:4 | ComputeScaling:1.12x | MemoryDegradation:3.15x
+
+FINAL VERIFICATION
+
+[X] Task 1 empirical core sweep completed
+[X] Task 2 three trials completed
+[X] Task 3 unsafe corruption measured
+[X] Task 3 lockless result = 2,000,000
+[X] Task 3 speedup requirement checked: 8.16x > 2.0x
+[X] Task 4 compute vs memory sweep completed
+[ ] Hardware information filled from host machine
+[X] Raw terminal output saved
+
+Thank you for your attention
