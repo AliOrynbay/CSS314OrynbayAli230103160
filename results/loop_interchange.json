@@ -1,0 +1,23 @@
+{
+  "N": 1344,
+  "M": 672,
+  "seed": 46428,
+  "numba": true,
+  "runs_ns_ijk": [
+    256689600,
+    258656000,
+    258825800
+  ],
+  "runs_ns_ikj": [
+    33893500,
+    33637200,
+    34867700
+  ],
+  "median_ns_ijk": 258656000,
+  "median_ns_ikj": 33893500,
+  "speedup_ijk_over_ikj": 7.631433755734875,
+  "max_abs_diff_ijk_vs_ikj": 0.0,
+  "max_abs_diff_vs_numpy": 6.536993168992922e-13,
+  "digest_ijk": "0a1ed6347e533b93943a4ca65985e0236d14485e25baf18713a22409aa79ae13",
+  "digest_ikj": "0a1ed6347e533b93943a4ca65985e0236d14485e25baf18713a22409aa79ae13"
+}
