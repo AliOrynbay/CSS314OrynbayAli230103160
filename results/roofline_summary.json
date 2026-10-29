@@ -1,0 +1,58 @@
+{
+  "kernel": "5-point Jacobi stencil, float64, ping-pong buffers",
+  "flops_per_point": 4,
+  "dram_bytes_per_point": {
+    "minimum": 16,
+    "with_write_allocate": 24,
+    "assumption": "src rows reused from L1/L2 (3 rows x N x 8 B fits in cache); dst is written once"
+  },
+  "arithmetic_intensity_flop_per_byte": {
+    "minimum_16B_per_point": 0.25,
+    "with_write_allocate_24B_per_point": 0.16666666666666666
+  },
+  "working_set": {
+    "N": 1344,
+    "two_grids_bytes": 28901376,
+    "l1d_bytes": 32768,
+    "l2_bytes_per_core": 524288,
+    "l3_bytes": 16777216,
+    "exceeds_l3": true,
+    "row_triplet_bytes": 32256
+  },
+  "peak_compute_gflops": 316.896,
+  "peak_compute_assumptions": {
+    "physical_cores": 6,
+    "base_ghz": 3.301,
+    "flops_per_cycle_per_core": 16.0
+  },
+  "memory_bandwidth_gbs": {
+    "measured_by_threads_STREAM_add": {
+      "1": 10.223022984799515,
+      "6": 7.896383635896541,
+      "12": 7.532986305470328
+    },
+    "measured_sustained": 10.223022984799515,
+    "theoretical": {
+      "gbs": 25.6,
+      "mts": 3200,
+      "modules": 1,
+      "channels_assumed": 1,
+      "source": "auto: Win32_PhysicalMemory (MT/s x 8 B x channels)"
+    }
+  },
+  "ridge_point_flop_per_byte": {
+    "using_measured_bw": 30.998267388343812,
+    "using_theoretical_bw": 12.37875
+  },
+  "attainable_gflops_at_stencil_AI": {
+    "using_measured_bw": 1.7038371641332524,
+    "using_theoretical_bw": 4.266666666666667
+  },
+  "achieved": {
+    "gflops_P1": 3.16647165195192,
+    "gflops_P6": 2.663749942686078,
+    "effective_dram_gbs_P6_at_24B": 15.982499656116467
+  },
+  "regime": "memory_bandwidth_bound",
+  "conclusion": "AI = 0.167 FLOP/B (0.250 with no write-allocate) is far below the ridge point; the kernel is memory-bandwidth bound."
+}
