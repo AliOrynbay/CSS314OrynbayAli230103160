@@ -1,14 +1,14 @@
 {
-  "cpu_model": "AMD64 Family 25 Model 80 Stepping 0, AuthenticAMD",
+  "cpu_model": "AMD Ryzen 5 5600H with Radeon Graphics",
   "microarchitecture": "AMD64",
-  "base_frequency_mhz": null,
-  "physical_cores": null,
+  "base_frequency_mhz": 3301.0,
+  "physical_cores": 6,
   "logical_threads": 12,
-  "smt_enabled": false,
+  "smt_enabled": true,
   "cache": {
-    "l1d_bytes": null,
-    "l2_bytes": null,
-    "l3_bytes": null,
+    "l1d_bytes": 32768,
+    "l2_bytes": 524288,
+    "l3_bytes": 16777216,
     "cache_line_bytes": 64
   },
   "os": {

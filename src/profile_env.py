@@ -103,6 +103,69 @@ def mac_info():
 
 
 # ---------------------------------------------------------------- Windows / fallback
+def _win_topology():
+    """Cores and per-core cache sizes via GetLogicalProcessorInformation."""
+    import ctypes
+    from ctypes import wintypes
+
+    class CACHE(ctypes.Structure):
+        _fields_ = [("Level", ctypes.c_ubyte), ("Assoc", ctypes.c_ubyte),
+                    ("LineSize", ctypes.c_ushort), ("Size", ctypes.c_uint),
+                    ("Type", ctypes.c_uint)]  # 0 unified, 1 instr, 2 data, 3 trace
+
+    class UNION(ctypes.Union):
+        _fields_ = [("Cache", CACHE), ("Reserved", ctypes.c_ulonglong * 2)]
+
+    class SLPI(ctypes.Structure):
+        _fields_ = [("ProcessorMask", ctypes.c_size_t),
+                    ("Relationship", ctypes.c_uint), ("u", UNION)]
+
+    k32 = ctypes.windll.kernel32
+    length = wintypes.DWORD(0)
+    k32.GetLogicalProcessorInformation(None, ctypes.byref(length))
+    n = length.value // ctypes.sizeof(SLPI)
+    buf = (SLPI * n)()
+    if not k32.GetLogicalProcessorInformation(buf, ctypes.byref(length)):
+        return None
+    cores, caches = 0, {"l1d": None, "l2": None, "l3": None, "line": None}
+    for e in buf:
+        if e.Relationship == 0:      # RelationProcessorCore
+            cores += 1
+        elif e.Relationship == 2:    # RelationCache
+            c = e.u.Cache
+            caches["line"] = caches["line"] or c.LineSize
+            if c.Level == 1 and c.Type in (0, 2) and caches["l1d"] is None:
+                caches["l1d"] = c.Size
+            elif c.Level == 2 and caches["l2"] is None:
+                caches["l2"] = c.Size
+            elif c.Level == 3 and caches["l3"] is None:
+                caches["l3"] = c.Size
+    return cores, caches
+
+
+def windows_info():
+    info, caches = generic_info()
+    try:
+        topo = _win_topology()
+        if topo:
+            info["physical_cores"], caches = topo[0], topo[1]
+    except Exception as e:
+        print(f"[WARN] ctypes topology failed: {e}", file=sys.stderr)
+    out = run('powershell -NoProfile -Command "Get-CimInstance Win32_Processor | '
+              'Select-Object -First 1 Name,NumberOfCores,NumberOfLogicalProcessors,'
+              'MaxClockSpeed | ConvertTo-Json"')
+    if out:
+        try:
+            d = json.loads(out)
+            info["cpu_model"] = d.get("Name", info["cpu_model"]).strip()
+            info["base_frequency_mhz"] = float(d["MaxClockSpeed"])
+            info["physical_cores"] = info["physical_cores"] or d.get("NumberOfCores")
+            info["logical_threads"] = d.get("NumberOfLogicalProcessors") or info["logical_threads"]
+        except Exception:
+            pass
+    return info, caches
+
+
 def generic_info():
     phys = logical = None
     try:
@@ -131,6 +194,8 @@ def collect():
         info, caches = linux_info()
     elif sys.platform == "darwin":
         info, caches = mac_info()
+    elif sys.platform == "win32":
+        info, caches = windows_info()
     else:
         info, caches = generic_info()
 
