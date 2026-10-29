@@ -54,5 +54,6 @@
     "effective_dram_gbs_P6_at_24B": 15.982499656116467
   },
   "regime": "memory_bandwidth_bound",
-  "conclusion": "AI = 0.167 FLOP/B (0.250 with no write-allocate) is far below the ridge point; the kernel is memory-bandwidth bound."
+  "conclusion": "AI = 0.167 FLOP/B (0.250 with no write-allocate) is far below the ridge point; the kernel is memory-bandwidth bound.",
+  "arithmetic_intensity": 0.16666666666666666
 }

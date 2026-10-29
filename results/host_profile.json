@@ -22,5 +22,6 @@
     "version": "3.11.2",
     "compiler": "MSC v.1934 64 bit (AMD64)",
     "numpy": "2.3.5"
-  }
+  },
+  "cache_line_bytes": 64
 }
